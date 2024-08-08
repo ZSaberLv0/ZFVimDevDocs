@@ -57,6 +57,7 @@ or [buy me a coffee](https://github.com/ZSaberLv0/ZSaberLv0)
 # Configs
 
 * `let g:ZFDocs_cachePath = $HOME . '/.vim_cache/zfdocs'` : where to store db cache file
+* `let g:ZFDocs_cacheTime = 30 * 24 * 60 * 60` : how many seconds cache would be kept
 * `let g:ZFDocs_docsUrl = 'https://devdocs.io/docs.json'` : where to download doc set meta data
 * `let g:ZFDocs_docSlugIndexUrl = 'https://documents.devdocs.io/%s/index.json'` : where to download doc index data
 * `let g:ZFDocs_docSlugDbUrl = 'https://documents.devdocs.io/%s/db.json'` : where to download doc index data

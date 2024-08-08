@@ -235,6 +235,9 @@ augroup ZFDocs_cacheClean_augroup
 augroup END
 function! ZFDocs_cacheClean(...)
     let cacheTime = get(a:, 1, get(g:, 'ZFDocs_cacheTime', 30 * 24 * 60 * 60))
+    if cacheTime < 0
+        return
+    endif
     let cacheFiles = split(glob(s:cachePath() . '/*.*', 1), "\n")
     let epoch = localtime() - cacheTime
     for cacheFile in cacheFiles
