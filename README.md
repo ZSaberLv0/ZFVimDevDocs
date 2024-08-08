@@ -76,6 +76,7 @@ you may supply your own impl by supply this function:
 "   'name' : 'matched index name',
 "   'path' : 'matched index path',
 "   'docHtml' : 'doc html string',
+"   'urlHash' : 'url hash of docHtml to jump',
 " }
 " params: original params passed to ZFDocs()
 function! ZFDocs_open(result, params)

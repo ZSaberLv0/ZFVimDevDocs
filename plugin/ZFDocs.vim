@@ -54,6 +54,12 @@ if !exists('*ZFDocs_open')
         execute cmd . ' ' . substitute(tmp, ' ', '\\ ', 'g')
         call delete(tmp)
         execute printf('file [%s]\ %s', a:result['slug'], a:result['name'])
+
+        " try jump by url hash
+        if !empty(a:result['urlHash'])
+            call search('\V' . a:result['urlHash'], 'cW')
+        endif
+
         return 1
     endfunction
 endif
@@ -260,9 +266,14 @@ function! s:findIndex(docIndex, key)
     return indexDataList
 endfunction
 
-" return doc html string
+" return: {
+"   'docHtml' : 'xxx',
+"   'urlHash' : 'url hash of docHtml to jump',
+" }
 function! s:findDocHtml(slug, docDb, indexData)
-    let docHtml = get(a:docDb, a:indexData['path'], '')
+    let pathList = split(a:indexData['path'], '#')
+    let path = pathList[0]
+    let docHtml = get(a:docDb, path, '')
     if empty(docHtml)
         throw printf('path "%s" not found in slug "%s", try clean cache: %s'
                     \ , a:indexData['path']
@@ -270,7 +281,10 @@ function! s:findDocHtml(slug, docDb, indexData)
                     \ , s:cachePath()
                     \ )
     endif
-    return docHtml
+    return {
+                \   'docHtml' : docHtml,
+                \   'urlHash' : get(pathList, 1, ''),
+                \ }
 endfunction
 
 function! s:choice_default(title, hints)
@@ -326,6 +340,7 @@ endfunction
 "   'name' : 'matched index name',
 "   'path' : 'matched index path',
 "   'docHtml' : 'doc html string',
+"   'urlHash' : 'url hash of docHtml to jump',
 " }
 function! s:ZFDocs(params)
     let key = tolower(a:params['key'])
@@ -403,7 +418,8 @@ function! s:ZFDocs(params)
                 \   'slug' : slug,
                 \   'name' : indexData['name'],
                 \   'path' : indexData['path'],
-                \   'docHtml' : docHtml,
+                \   'docHtml' : docHtml['docHtml'],
+                \   'urlHash' : docHtml['urlHash'],
                 \ }
     if !get(a:params, 'findOnly', 0)
         call ZFDocs_open(result, a:params)
