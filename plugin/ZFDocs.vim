@@ -226,23 +226,40 @@ endfunction
 
 " ============================================================
 " return a list of doc slug
-" exact match always at first
+" ordered by:
+" 1. local cache exists
+" 2. exact name match
+" 3. others
 function! s:findSlug(docList, slug)
-    let slugList = []
+    let cacheExist = []
+    let nameMatch = []
+    let others = []
+    let cachePath = s:cachePath()
+    let dup = {}
     for item in a:docList
-        if tolower(item['slug']) == a:slug
-                    \ || tolower(item['name']) == a:slug
-            if index(slugList, item['slug']) < 0
-                call insert(slugList, item['slug'], 0)
-            endif
-        elseif match(item['slug'], a:slug) >= 0
-                    \ || match(item['name'], a:slug) >= 0
-            if index(slugList, item['slug']) < 0
-                call add(slugList, item['slug'])
+        if match(item['slug'], '\V' . a:slug) >= 0
+                    \ || match(item['name'], '\V' . a:slug) >= 0
+            if filereadable(printf('%s/%s.index.json', cachePath, item['slug']))
+                        \ || filereadable(printf('%s/%s.db.json', cachePath, item['slug']))
+                if !exists("dup[item['slug']]")
+                    let dup[item['slug']] = 1
+                    call add(cacheExist, item['slug'])
+                endif
+            elseif tolower(item['slug']) == a:slug
+                        \ || tolower(item['name']) == a:slug
+                if !exists("dup[item['slug']]")
+                    let dup[item['slug']] = 1
+                    call add(nameMatch, item['slug'])
+                endif
+            else
+                if !exists("dup[item['slug']]")
+                    let dup[item['slug']] = 1
+                    call add(others, item['slug'])
+                endif
             endif
         endif
     endfor
-    return slugList
+    return extend(extend(nameMatch, cacheExist), others)
 endfunction
 
 " return: [
@@ -259,7 +276,7 @@ function! s:findIndex(docIndex, key)
     for item in entries
         if a:key == item['name']
             call insert(indexDataList, item, 0)
-        elseif match(item['name'], a:key) >= 0
+        elseif match(item['name'], '\V' . a:key) >= 0
             call add(indexDataList, item)
         endif
     endfor
