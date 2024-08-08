@@ -195,10 +195,7 @@ function! ZFDocsCmdComplete_api(ArgLead, CmdLine, CursorPos)
     return ret
 endfunction
 function! ZFDocsCmdComplete_slug(ArgLead, CmdLine, CursorPos)
-    if empty(&filetype)
-        return []
-    endif
-    let slugToFind = &filetype
+    let slugToFind = a:ArgLead
     let params = {
                 \   'autoDownload' : 0,
                 \ }
