@@ -28,10 +28,14 @@ if !exists('*ZFDocs_download')
         else
             throw 'curl or wget not available'
         endif
-        call system(printf(cmd, a:to, a:url))
+        let tmp = a:to . '.tmp'
+        call system(printf(cmd, tmp, a:url))
         if v:shell_error != '0'
+            call delete(tmp)
             throw printf('download failed (%s): %s', v:shell_error, a:url)
         endif
+        call writefile(readfile(tmp), a:to)
+        call delete(tmp)
         return 1
     endfunction
 endif
@@ -222,6 +226,22 @@ function! ZFDocsCmdComplete(ArgLead, CmdLine, CursorPos)
     else
         return []
     endif
+endfunction
+
+" ============================================================
+augroup ZFDocs_cacheClean_augroup
+    autocmd!
+    autocmd VimLeavePre * call ZFDocs_cacheClean()
+augroup END
+function! ZFDocs_cacheClean(...)
+    let cacheTime = get(a:, 1, get(g:, 'ZFDocs_cacheTime', 30 * 24 * 60 * 60))
+    let cacheFiles = split(glob(s:cachePath() . '/*.*', 1), "\n")
+    let epoch = localtime() - cacheTime
+    for cacheFile in cacheFiles
+        if getftime(cacheFile) < epoch
+            silent! call delete(cacheFile)
+        endif
+    endfor
 endfunction
 
 " ============================================================
