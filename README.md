@@ -3,7 +3,7 @@
 
 ![](https://raw.githubusercontent.com/ZSaberLv0/ZFVimDevDocs/master/preview.png)
 
-view devdocs.io docs inside vim
+view [devdocs.io](https://devdocs.io) inside vim
 
 similar projects:
 
