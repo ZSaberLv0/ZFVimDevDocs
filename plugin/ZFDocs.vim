@@ -1,5 +1,5 @@
 
-command! -nargs=+ ZFDocs :call ZFDocs(ZFDocs_argParse(<f-args>))
+command! -nargs=+ -complete=customlist,ZFDocsCmdComplete ZFDocs :call ZFDocs(ZFDocs_argParse(<f-args>))
 function! ZFDocs(params)
     try
         return s:ZFDocs(a:params)
@@ -60,20 +60,12 @@ endif
 
 " ============================================================
 function! ZFDocs_argParse(key, ...)
-    let key = tolower(a:key)
-
     let slug = get(a:, 1, '')
     if empty(slug)
         let slug = &filetype
     endif
-    if empty(slug)
-        let slug = ''
-    else
-        let slug = tolower(slug)
-    endif
-
     return {
-                \   'key' : key,
+                \   'key' : a:key,
                 \   'slug' : slug,
                 \ }
 endfunction
@@ -82,6 +74,13 @@ function! s:cachePath()
     return get(g:, 'ZFDocs_cachePath', get(g:, 'zf_vim_cache_path', $HOME . '/.vim_cache') . '/zfdocs')
 endfunction
 
+" file contents: [
+"   {
+"     'name' : 'xxx',
+"     'slug' : 'xxx',
+"   },
+"   ...
+" ]
 function! ZFDocs_downloadDocList()
     call mkdir(s:cachePath(), 'p')
     let path = s:cachePath() . '/docs.json'
@@ -107,6 +106,15 @@ function! s:loadDocList(params)
     return ret
 endfunction
 
+" file contents: {
+"   'entries' : [
+"     {
+"       'name' : 'xxx',
+"       'path' : 'xxx',
+"     },
+"     ...
+"   ],
+" }
 function! ZFDocs_downloadDocIndex(slug)
     let path = printf('%s/%s.index.json', s:cachePath(), a:slug)
     let url = printf(get(g:, 'ZFDocs_docSlugIndexUrl', 'https://documents.devdocs.io/%s/index.json'), a:slug)
@@ -131,6 +139,10 @@ function! s:loadDocIndex(params, slug)
     return ret
 endfunction
 
+" file contents: {
+"   'xxx path' : '<xxx docHtml>',
+"   ...
+" }
 function! ZFDocs_downloadDocDb(slug)
     let path = printf('%s/%s.db.json', s:cachePath(), a:slug)
     let url = printf(get(g:, 'ZFDocs_docSlugDbUrl', 'https://documents.devdocs.io/%s/db.json'), a:slug)
@@ -155,6 +167,61 @@ function! s:loadDocDb(params, slug)
     return ret
 endfunction
 
+" ============================================================
+function! ZFDocsCmdComplete_api(ArgLead, CmdLine, CursorPos)
+    if empty(&filetype)
+        return []
+    endif
+    let slugToFind = &filetype
+    let params = {
+                \   'autoDownload' : 0,
+                \ }
+    try
+        silent! let docList = s:loadDocList(params)
+        silent! let slugList = s:findSlug(docList, slugToFind)
+        if empty(slugList)
+            return []
+        endif
+        let slug = slugList[0]
+        silent! let docIndex = s:loadDocIndex(params, slug)
+        silent! let indexDataList = s:findIndex(docIndex, a:ArgLead)
+    catch
+        return []
+    endtry
+    let ret = []
+    for indexData in indexDataList
+        call add(ret, indexData['name'])
+    endfor
+    return ret
+endfunction
+function! ZFDocsCmdComplete_slug(ArgLead, CmdLine, CursorPos)
+    if empty(&filetype)
+        return []
+    endif
+    let slugToFind = &filetype
+    let params = {
+                \   'autoDownload' : 0,
+                \ }
+    try
+        silent! let docList = s:loadDocList(params)
+        silent! let slugList = s:findSlug(docList, slugToFind)
+    catch
+        return []
+    endtry
+    return slugList
+endfunction
+function! ZFDocsCmdComplete(ArgLead, CmdLine, CursorPos)
+    let index = len(split(strpart(a:CmdLine, 0, a:CursorPos))) - 1
+    if index <= 1
+        return ZFDocsCmdComplete_api(a:ArgLead, a:CmdLine, a:CursorPos)
+    elseif index == 2
+        return ZFDocsCmdComplete_slug(a:ArgLead, a:CmdLine, a:CursorPos)
+    else
+        return []
+    endif
+endfunction
+
+" ============================================================
 " return a list of doc slug
 " exact match always at first
 function! s:findSlug(docList, slug)
@@ -264,7 +331,27 @@ endfunction
 "   'docHtml' : 'doc html string',
 " }
 function! s:ZFDocs(params)
+    let key = tolower(a:params['key'])
+    if empty(key)
+        throw 'key is required'
+    endif
+
     let slugToFind = a:params['slug']
+    if empty(slugToFind)
+        let slugToFind = &filetype
+    endif
+    if empty(slugToFind)
+        call inputsave()
+        let slugToFind = input('input doc name to search: ')
+        call inputrestore()
+        redraw
+        if empty(slugToFind)
+            echo 'canceled'
+            return {}
+        endif
+    endif
+    let slugToFind = tolower(slugToFind)
+
     let slugMapped = get(get(g:, 'ZFDocs_slugMap', {}), slugToFind, '')
     if !empty(slugMapped)
         let slugToFind = slugMapped
@@ -292,12 +379,12 @@ function! s:ZFDocs(params)
     let docIndex = s:loadDocIndex(a:params, slug)
     let docDb = s:loadDocDb(a:params, slug)
 
-    let indexDataList = s:findIndex(docIndex, a:params['key'])
+    let indexDataList = s:findIndex(docIndex, key)
     if empty(indexDataList)
-        throw printf('no doc found for key: %s, slug: %s', a:params['key'], slug)
+        throw printf('no doc found for key: %s, slug: %s', key, slug)
     endif
     if len(indexDataList) > 1
-                \ && indexDataList[0]['name'] != a:params['key']
+                \ && indexDataList[0]['name'] != key
                 \ && !get(a:params, 'autoChooseIndex', get(g:, 'ZFDocs_autoChooseIndex', 0))
         let hints = []
         for item in indexDataList
