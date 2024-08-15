@@ -28,7 +28,7 @@ or [buy me a coffee](https://github.com/ZSaberLv0/ZSaberLv0)
 1. requirements
 
     * `exists('*json_decode')`
-    * have [w3m](https://github.com/acg/w3m) installed (or supply your own html viewer, see below)
+    * have [yuratomo/w3m.vim](https://github.com/yuratomo/w3m.vim) and [w3m](http://w3m.sourceforge.net) installed (or supply your own html viewer impl, see below)
     * have `curl` or `wget` available
 
 1. use [Vundle](https://github.com/VundleVim/Vundle.vim) or any other plugin manager you like to install
@@ -50,8 +50,9 @@ or [buy me a coffee](https://github.com/ZSaberLv0/ZSaberLv0)
         try to search with specified doc set
 
 1. necessary doc db would be downloaded when `:ZFDocs` called,
-    which may cause much time to download,
-    please be patient
+    which may cause much time to download for first time,
+    please be patient,
+    or use `<c-c>` to cancel
 
 
 # Configs
@@ -84,6 +85,10 @@ function! ZFDocs_open(result, params)
     ...
 endfunction
 ```
+
+typically, you may want to use [pandoc](https://pandoc.org) to convert to markdown file
+and open it in new buffer
+
 
 ## doc downloader
 
