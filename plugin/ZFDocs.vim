@@ -327,7 +327,14 @@ function! s:findDocHtml(slug, docDb, indexData)
                 \ }
 endfunction
 
-function! s:choice_default(title, hints)
+function! ZFChoice(title, hints)
+    if exists('*ZF_VimCmdMenuShow')
+        return ZFChoice_ZFVimCmdMenu(a:title, a:hints)
+    else
+        return ZFChoice_default(a:title, a:hints)
+    endif
+endfunction
+function! ZFChoice_default(title, hints)
     let hint = []
     call add(hint, a:title)
     call add(hint, '')
@@ -343,7 +350,7 @@ function! s:choice_default(title, hints)
         return -1
     endif
 endfunction
-function! s:choice_ZFVimCmdMenu(title, hints)
+function! ZFChoice_ZFVimCmdMenu(title, hints)
     let index = 0
     for item in a:hints
         call ZF_VimCmdMenuAdd({
@@ -358,13 +365,6 @@ function! s:choice_ZFVimCmdMenu(title, hints)
                 \ })
     redraw
     return get(choice, '_itemIndex', -1)
-endfunction
-function! s:choice(title, hints)
-    if exists('*ZF_VimCmdMenuShow')
-        return s:choice_ZFVimCmdMenu(a:title, a:hints)
-    else
-        return s:choice_default(a:title, a:hints)
-    endif
 endfunction
 
 " params: {
@@ -417,7 +417,7 @@ function! s:ZFDocs(params)
     if len(slugList) > 1
                 \ && slugList[0] != slugToFind
                 \ && !get(a:params, 'autoChooseSlug', get(g:, 'ZFDocs_autoChooseSlug', 0))
-        let choice = s:choice('choose doc slug to search:', slugList)
+        let choice = ZFChoice('choose doc slug to search:', slugList)
         if choice < 0
             redraw
             echo 'canceled'
@@ -442,7 +442,7 @@ function! s:ZFDocs(params)
         for item in indexDataList
             call add(hints, item['name'])
         endfor
-        let choice = s:choice('choose doc to show:', hints)
+        let choice = ZFChoice('choose doc to show:', hints)
         if choice < 0
             redraw
             echo 'canceled'
