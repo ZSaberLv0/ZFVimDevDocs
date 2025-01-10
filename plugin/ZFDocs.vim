@@ -191,15 +191,26 @@ function! ZFDocsCmdComplete_api(ArgLead, CmdLine, CursorPos)
     try
         silent! let docList = s:loadDocList(params)
         silent! let slugList = s:findSlug(docList, slugToFind)
+        if empty(slugList) && !empty(slugToFind)
+            silent! let slugList = s:findSlug(docList, '')
+        endif
         if empty(slugList)
             return []
         endif
-        let slug = slugList[0]
-        silent! let docIndex = s:loadDocIndex(params, slug)
-        silent! let indexDataList = s:findIndex(docIndex, a:ArgLead)
     catch
         return []
     endtry
+
+    let indexDataList = []
+    for slug in slugList
+        try
+            silent! let docIndex = s:loadDocIndex(params, slug)
+            silent! let indexDataListTmp = s:findIndex(docIndex, a:ArgLead)
+            call extend(indexDataList, indexDataListTmp)
+        catch
+        endtry
+    endfor
+
     let ret = []
     for indexData in indexDataList
         call add(ret, indexData['name'])
@@ -220,10 +231,10 @@ function! ZFDocsCmdComplete_slug(ArgLead, CmdLine, CursorPos)
     return slugList
 endfunction
 function! ZFDocsCmdComplete(ArgLead, CmdLine, CursorPos)
-    let index = len(split(strpart(a:CmdLine, 0, a:CursorPos))) - 1
-    if index <= 1
+    let count = len(split(strpart(a:CmdLine, 0, a:CursorPos))) - 1
+    if count == 0 || (count == 1 && !empty(a:ArgLead))
         return ZFDocsCmdComplete_api(a:ArgLead, a:CmdLine, a:CursorPos)
-    elseif index == 2
+    elseif count == 1 || (count == 2 && !empty(a:ArgLead))
         return ZFDocsCmdComplete_slug(a:ArgLead, a:CmdLine, a:CursorPos)
     else
         return []
