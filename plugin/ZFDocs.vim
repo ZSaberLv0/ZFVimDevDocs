@@ -92,7 +92,9 @@ endfunction
 "   ...
 " ]
 function! ZFDocs_downloadDocList()
-    call mkdir(s:cachePath(), 'p')
+    if !isdirectory(s:cachePath())
+        silent! call mkdir(s:cachePath(), 'p')
+    endif
     let path = s:cachePath() . '/docs.json'
     let url = get(g:, 'ZFDocs_docsUrl', 'https://devdocs.io/docs.json')
     redraw
